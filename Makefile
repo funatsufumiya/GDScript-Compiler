@@ -5,6 +5,13 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -g
 LDFLAGS = 
 
+# Optionally enable static linking of libstdc++/libgcc to reduce runtime DLL
+# dependencies on Windows. Set STATIC_LINK=1 when invoking make to enable.
+STATIC_LINK ?= 1
+ifeq ($(STATIC_LINK),1)
+LDFLAGS += -static-libstdc++ -static-libgcc
+endif
+
 # Directories
 SRCDIR = .
 OBJDIR = obj
@@ -114,6 +121,7 @@ help:
 	@echo "  format    - Format source code"
 	@echo "  docs      - Generate documentation"
 	@echo "  help      - Show this help"
+	@echo "  static    - Build with -static-libstdc++ and -static-libgcc (Windows)"
 	@echo ""
 	@echo "Usage examples:"
 	@echo "  make                    # Build compiler"
