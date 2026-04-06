@@ -3,6 +3,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iomanip>
+#include <cstring>
 
 // Instruction implementation
 std::string Instruction::toString() const {
@@ -1688,38 +1689,38 @@ void CodeGenerator::generateMacOSExecutable(const std::string& filename) {
     file.write(reinterpret_cast<const char*>(&text_section), sizeof(text_section));
     
     // Load Command 2: LC_SEGMENT_64 for __DATA
-    struct SegmentCommand64 data_segment = {
-        .cmd = 0x19,                      // LC_SEGMENT_64
-        .cmdsize = 0x98,                  // Size of this command
-        .segname = "__DATA",
-        .vmaddr = 0x100001000,            // Virtual memory address
-        .vmsize = 0x1000,                 // Virtual memory size
-        .fileoff = 0x1000,                // File offset
-        .filesize = 0x1000,               // File size
-        .maxprot = 7,                     // VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE
-        .initprot = 3,                    // VM_PROT_READ | VM_PROT_WRITE
-        .nsects = 1,                      // Number of sections
-        .flags = 0
-    };
-    
+    struct SegmentCommand64 data_segment;
+    data_segment.cmd = 0x19;                      // LC_SEGMENT_64
+    data_segment.cmdsize = 0x98;                  // Size of this command
+    std::memset(data_segment.segname, 0, sizeof(data_segment.segname));
+    std::strncpy(data_segment.segname, "__DATA", sizeof(data_segment.segname));
+    data_segment.vmaddr = 0x100001000;            // Virtual memory address
+    data_segment.vmsize = 0x1000;                 // Virtual memory size
+    data_segment.fileoff = 0x1000;                // File offset
+    data_segment.filesize = 0x1000;               // File size
+    data_segment.maxprot = 7;                     // VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE
+    data_segment.initprot = 3;                    // VM_PROT_READ | VM_PROT_WRITE
+    data_segment.nsects = 1;                      // Number of sections
+    data_segment.flags = 0;
+
     file.write(reinterpret_cast<const char*>(&data_segment), sizeof(data_segment));
-    
+
     // Section for __DATA,__data
-    struct Section64 data_section = {
-        .sectname = "__data",
-        .segname = "__DATA",
-        .addr = 0x100001000,              // Section address
-        .size = 0x20,                     // Section size
-        .offset = 0x1000,                 // File offset
-        .align = 3,                       // Alignment (2^3 = 8)
-        .reloff = 0,                      // Relocation offset
-        .nreloc = 0,                      // Number of relocations
-        .flags = 0,                       // S_REGULAR
-        .reserved1 = 0,
-        .reserved2 = 0,
-        .reserved3 = 0
-    };
-    
+    struct Section64 data_section;
+    std::memset(&data_section, 0, sizeof(data_section));
+    std::strncpy(data_section.sectname, "__data", sizeof(data_section.sectname));
+    std::strncpy(data_section.segname, "__DATA", sizeof(data_section.segname));
+    data_section.addr = 0x100001000;              // Section address
+    data_section.size = 0x20;                     // Section size
+    data_section.offset = 0x1000;                 // File offset
+    data_section.align = 3;                       // Alignment (2^3 = 8)
+    data_section.reloff = 0;                      // Relocation offset
+    data_section.nreloc = 0;                      // Number of relocations
+    data_section.flags = 0;                       // S_REGULAR
+    data_section.reserved1 = 0;
+    data_section.reserved2 = 0;
+    data_section.reserved3 = 0;
+
     file.write(reinterpret_cast<const char*>(&data_section), sizeof(data_section));
     
     // Load Command 3: LC_MAIN (entry point)
@@ -1827,17 +1828,16 @@ void CodeGenerator::generateLinuxExecutable(const std::string& filename) {
     file.write(reinterpret_cast<const char*>(&code_segment), sizeof(code_segment));
     
     // Program Header 2: LOAD segment for data
-    struct ProgramHeader64 data_segment = {
-        .p_type = 1,                  // PT_LOAD
-        .p_flags = 6,                 // PF_R | PF_W (read + write)
-        .p_offset = 0x1000,           // File offset
-        .p_vaddr = 0x401000,          // Virtual address
-        .p_paddr = 0x401000,          // Physical address
-        .p_filesz = 0x1000,           // File size
-        .p_memsz = 0x1000,            // Memory size
-        .p_align = 0x1000             // Alignment
-    };
-    
+    struct ProgramHeader64 data_segment;
+    data_segment.p_type = 1;                  // PT_LOAD
+    data_segment.p_flags = 6;                 // PF_R | PF_W (read + write)
+    data_segment.p_offset = 0x1000;           // File offset
+    data_segment.p_vaddr = 0x401000;          // Virtual address
+    data_segment.p_paddr = 0x401000;          // Physical address
+    data_segment.p_filesz = 0x1000;           // File size
+    data_segment.p_memsz = 0x1000;            // Memory size
+    data_segment.p_align = 0x1000;            // Alignment
+
     file.write(reinterpret_cast<const char*>(&data_segment), sizeof(data_segment));
     
     // Pad to code section (offset 0x1000)
@@ -1908,51 +1908,51 @@ void CodeGenerator::generateLinuxExecutable(const std::string& filename) {
     file.write(reinterpret_cast<const char*>(&null_section), sizeof(null_section));
     
     // Section Header 1: .text section
-    struct SectionHeader64 text_section = {
-        .sh_name = 1,                 // Offset in string table
-        .sh_type = 1,                 // SHT_PROGBITS
-        .sh_flags = 6,                // SHF_ALLOC | SHF_EXECINSTR
-        .sh_addr = 0x401000,          // Virtual address
-        .sh_offset = 0x1000,          // File offset
-        .sh_size = 0x40,              // Section size
-        .sh_link = 0,
-        .sh_info = 0,
-        .sh_addralign = 16,
-        .sh_entsize = 0
-    };
-    
+    struct SectionHeader64 text_section;
+    std::memset(&text_section, 0, sizeof(text_section));
+    text_section.sh_name = 1;                 // Offset in string table
+    text_section.sh_type = 1;                 // SHT_PROGBITS
+    text_section.sh_flags = 6;                // SHF_ALLOC | SHF_EXECINSTR
+    text_section.sh_addr = 0x401000;          // Virtual address
+    text_section.sh_offset = 0x1000;          // File offset
+    text_section.sh_size = 0x40;              // Section size
+    text_section.sh_link = 0;
+    text_section.sh_info = 0;
+    text_section.sh_addralign = 16;
+    text_section.sh_entsize = 0;
+
     file.write(reinterpret_cast<const char*>(&text_section), sizeof(text_section));
-    
+
     // Section Header 2: .data section
-    struct SectionHeader64 data_section_hdr = {
-        .sh_name = 7,                 // Offset in string table
-        .sh_type = 1,                 // SHT_PROGBITS
-        .sh_flags = 3,                // SHF_ALLOC | SHF_WRITE
-        .sh_addr = 0x402000,          // Virtual address
-        .sh_offset = 0x1000,          // File offset
-        .sh_size = 0x40,              // Section size
-        .sh_link = 0,
-        .sh_info = 0,
-        .sh_addralign = 8,
-        .sh_entsize = 0
-    };
-    
+    struct SectionHeader64 data_section_hdr;
+    std::memset(&data_section_hdr, 0, sizeof(data_section_hdr));
+    data_section_hdr.sh_name = 7;                 // Offset in string table
+    data_section_hdr.sh_type = 1;                 // SHT_PROGBITS
+    data_section_hdr.sh_flags = 3;                // SHF_ALLOC | SHF_WRITE
+    data_section_hdr.sh_addr = 0x402000;          // Virtual address
+    data_section_hdr.sh_offset = 0x1000;          // File offset
+    data_section_hdr.sh_size = 0x40;              // Section size
+    data_section_hdr.sh_link = 0;
+    data_section_hdr.sh_info = 0;
+    data_section_hdr.sh_addralign = 8;
+    data_section_hdr.sh_entsize = 0;
+
     file.write(reinterpret_cast<const char*>(&data_section_hdr), sizeof(data_section_hdr));
-    
+
     // Section Header 3: .shstrtab (string table)
-    struct SectionHeader64 strtab_section = {
-        .sh_name = 13,                // Offset in string table
-        .sh_type = 3,                 // SHT_STRTAB
-        .sh_flags = 0,
-        .sh_addr = 0,
-        .sh_offset = 0x2100,          // File offset
-        .sh_size = 0x23,              // Section size
-        .sh_link = 0,
-        .sh_info = 0,
-        .sh_addralign = 1,
-        .sh_entsize = 0
-    };
-    
+    struct SectionHeader64 strtab_section;
+    std::memset(&strtab_section, 0, sizeof(strtab_section));
+    strtab_section.sh_name = 13;                // Offset in string table
+    strtab_section.sh_type = 3;                 // SHT_STRTAB
+    strtab_section.sh_flags = 0;
+    strtab_section.sh_addr = 0;
+    strtab_section.sh_offset = 0x2100;          // File offset
+    strtab_section.sh_size = 0x23;              // Section size
+    strtab_section.sh_link = 0;
+    strtab_section.sh_info = 0;
+    strtab_section.sh_addralign = 1;
+    strtab_section.sh_entsize = 0;
+
     file.write(reinterpret_cast<const char*>(&strtab_section), sizeof(strtab_section));
     
     // String table content
